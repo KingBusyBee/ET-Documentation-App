@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Emergent Thought — Documentation</title>
+  <link rel="stylesheet" href="/static/css/app.css">
+</head>
+<body>
+<div class="app-shell">
+
+  <!-- ── Sidebar ── -->
+  <aside class="sidebar">
+    <div class="logo">
+      <span class="logo-name">Emergent Thought</span>
+      <span class="logo-tagline">Making documentation easier — like technology is supposed to.</span>
+    </div>
+
+    <nav>
+      <a href="/" class="active">Log Session</a>
+      <a href="/sessions">All Sessions</a>
+      <a href="/print" target="_blank">Print Log</a>
+    </nav>
+
+    <!-- Year progress summary in sidebar -->
+    <div>
+      <div class="field" style="margin-bottom:.75rem;">
+        <label style="font-size:.7rem;">{{ year }} Total Hours</label>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text);">
+          {{ totals.total_hours }} <span class="text-muted" style="font-size:.8rem;font-weight:400;">/ {{ annual_goal }}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ totals.total_pct }}%"></div></div>
+      </div>
+      <div class="field">
+        <label style="font-size:.7rem;">Core Subject Hours</label>
+        <div style="font-size:1.1rem;font-weight:700;color:var(--text);">
+          {{ totals.core_hours }} <span class="text-muted" style="font-size:.8rem;font-weight:400;">/ {{ core_goal }}</span>
+        </div>
+        <div class="bar-track"><div class="bar-fill" style="width:{{ totals.core_pct }}%"></div></div>
+      </div>
+    </div>
+
+    <div class="sidebar-footer">
+      All data is stored locally on your machine. No internet required. No data is collected or transmitted.<br><br>
+      Back up your <code>et_docs.db</code> file to preserve your records.
+    </div>
+  </aside>
+
+  <!-- ── Main ── -->
+  <main class="main">
+
+    <div class="page-header">
+      <h1>Log a Session</h1>
+      <p>Record a homeschool session toward Missouri's annual hour requirement (RSMo 167.012).</p>
+    </div>
+
+    <!-- Progress cards -->
+    <div class="progress-grid">
+      <div class="progress-card">
+        <div class="label">Annual Total — Goal: {{ annual_goal }} hrs</div>
+        <div class="numbers">{{ totals.total_hours }} <span>hrs</span></div>
+        <div class="bar-track">
+          <div class="bar-fill" style="width:{{ totals.total_pct }}%"></div>
+        </div>
+      </div>
+      <div class="progress-card">
+        <div class="label">Core Subjects — Goal: {{ core_goal }} hrs</div>
+        <div class="numbers">{{ totals.core_hours }} <span>hrs</span></div>
+        <div class="bar-track">
+          <div class="bar-fill {% if totals.core_pct < 40 %}warn{% endif %}" style="width:{{ totals.core_pct }}%"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Timer -->
+    <div class="timer-card">
+      <h2>Session Timer</h2>
+      <div class="timer-display" id="timer-display">00:00</div>
+      <div class="timer-controls">
+        <button class="btn btn-primary" id="btn-start">▶ Start</button>
+        <button class="btn btn-ghost" id="btn-pause">⏸ Pause</button>
+        <button class="btn btn-ghost" id="btn-reset">↺ Reset</button>
+        <button class="btn btn-ghost" id="btn-use-time">→ Use This Time</button>
+        <span class="idle-warning" id="idle-warning">⚠ Timer paused — no activity for 15 minutes</span>
+      </div>
+    </div>
+
+    <!-- Log form -->
+    <div class="form-card" id="log-form">
+      <h2>Session Details</h2>
+      <form action="/log" method="post" id="log-session-form">
+        <div class="form-row">
+          <div class="field">
+            <label for="session_date">Date</label>
+            <input type="date" name="session_date" id="session_date" value="{{ today }}" required>
+          </div>
+        </div>
+
+        <div class="field" style="margin-bottom:.5rem;">
+          <label>Subjects &amp; Duration</label>
+        </div>
+        <div id="subject-rows">
+          <div class="subject-row">
+            <select name="subjects" class="subject-select" required>
+              {% for s in subjects %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+            <input type="number" name="durations" class="duration-input"
+                   min="1" max="1440" step="0.5" placeholder="minutes" required>
+            <button type="button" class="btn btn-ghost btn-remove-row" title="Remove this subject" disabled>✕</button>
+          </div>
+        </div>
+        <button type="button" class="btn btn-ghost" id="btn-add-row" style="margin-bottom:1rem;">+ Add another subject</button>
+
+        <template id="subject-row-template">
+          <div class="subject-row">
+            <select name="subjects" class="subject-select" required>
+              {% for s in subjects %}
+              <option value="{{ s }}">{{ s }}</option>
+              {% endfor %}
+            </select>
+            <input type="number" name="durations" class="duration-input"
+                   min="1" max="1440" step="0.5" placeholder="minutes" required>
+            <button type="button" class="btn btn-ghost btn-remove-row" title="Remove this subject">✕</button>
+          </div>
+        </template>
+
+        <div class="form-row full">
+          <div class="field">
+            <label for="notes">Notes <span class="text-muted" style="font-weight:400;text-transform:none;letter-spacing:0;">(optional — applies to this whole entry)</span></label>
+            <textarea name="notes" id="notes" placeholder="What did you cover? What did they understand?"></textarea>
+          </div>
+        </div>
+        <button type="submit" class="btn btn-primary">Save Session</button>
+      </form>
+    </div>
+
+    <!-- Recent sessions -->
+    <div class="sessions-card">
+      <h2>Recent Sessions</h2>
+      {% if recent %}
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Subject</th>
+            <th>Duration</th>
+            <th>Notes</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for s in recent %}
+          <tr>
+            <td>{{ s.date }}</td>
+            <td><span class="subject-tag {% if s.subject == 'Other / Elective' %}other{% endif %}">{{ s.subject }}</span></td>
+            <td style="font-variant-numeric:tabular-nums;">{{ "%.0f"|format(s.duration_minutes) }} min</td>
+            <td class="notes-cell">{{ s.notes or "—" }}</td>
+            <td><button class="btn btn-danger btn-delete" data-id="{{ s.id }}">✕</button></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% else %}
+      <div class="empty-state">No sessions logged yet. Start your first session above.</div>
+      {% endif %}
+    </div>
+
+  </main>
+</div>
+
+<script src="/static/js/timer.js"></script>
+</body>
+</html>
