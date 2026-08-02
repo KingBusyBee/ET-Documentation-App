@@ -4,6 +4,11 @@
 
 A free, offline-first desktop app for logging homeschool sessions toward Missouri's annual hour requirement (RSMo 167.012). All data stays on your machine. No internet. No accounts. No data collection.
 
+Download
+
+⬇ Download EmergentThought.exe — no install, no Python needed. Just double-click and go.
+
+Building it yourself or contributing? See Quick Start — Run from source below.
 ---
 
 ## Quick Start — Windows Desktop App (recommended, for distributing to other families)
