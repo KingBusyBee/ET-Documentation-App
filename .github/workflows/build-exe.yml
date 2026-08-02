@@ -1,0 +1,43 @@
+name: Build Windows EXE
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install fastapi uvicorn sqlalchemy jinja2 python-multipart pywebview pyinstaller
+
+      - name: Build EXE
+        run: |
+          pyinstaller EmergentThought.spec --clean
+
+      - name: Upload EXE as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: EmergentThought-Windows-EXE
+          path: dist/EmergentThought.exe
+
+      - name: Create GitHub Release with EXE
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: EmergentThought v${{ github.run_number }}
+          files: dist/EmergentThought.exe
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
